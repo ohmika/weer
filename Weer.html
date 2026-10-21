@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px 20px;
+      background: #f3f6fa;
+      color: #1f2937;
+      font-family: Arial, sans-serif;
+    }
+
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .weer-overzicht {
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) 330px 256px;
+      align-items: start;
+      gap: 20px;
+    }
+
+    .kaart {
+      min-width: 0;
+      padding: 18px;
+      overflow: hidden;
+      background: white;
+      border: 1px solid #e1e7ef;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px rgb(31 41 55 / 7%);
+    }
+
+    #resultaten {
+      min-height: 100px;
+      margin: 0;
+      overflow-x: auto;
+      font: 14px/1.65 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+
+    iframe {
+      display: block;
+      max-width: 100%;
+      border: 0;
+    }
+
+    @media (max-width: 1000px) {
+      .weer-overzicht {
+        grid-template-columns: minmax(0, 1fr) minmax(256px, 330px);
+      }
+
+      .radar-kaart {
+        grid-column: 2;
+      }
+    }
+
+    @media (max-width: 700px) {
+      body {
+        padding: 20px 12px;
+      }
+
+      .weer-overzicht {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .radar-kaart {
+        grid-column: auto;
+      }
+
+      .kaart iframe {
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="weer-overzicht">
+      <section class="kaart">
+        <pre id="resultaten">Buienradar-gegevens worden opgehaald…</pre>
+      </section>
+
+      <section class="kaart">
+        <iframe
+          src="https://gadgets.buienradar.nl/gadget/zoommap/?lat=51.76645&lng=5.52587&overname=2&zoom=8&naam=5341GB&size=2b&voor=1"
+          width="330"
+          height="330"
+          scrolling="no"
+          title="Buienradar in de buurt"
+        ></iframe>
+      </section>
+
+      <section class="kaart radar-kaart">
+        <iframe
+          src="https://gadgets.buienradar.nl/gadget/radarfivedays"
+          width="256"
+          height="406"
+          scrolling="no"
+          title="Buienradar Nederland"
+        ></iframe>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const uitvoer = document.getElementById("resultaten");
+    const url =
+      "https://gadgets.buienradar.nl/data/raintext/?lat=51.76&lon=5.51";
+
+    async function laadGegevens() {
+      try {
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`HTTP-fout ${response.status}`);
+        }
+
+        const tekst = await response.text();
+
+        uitvoer.textContent = tekst
+          .split(/\r?\n/)
+          .map(regel =>
+            regel.replace(/\d{3}/, cijfers => {
+              const waarde = Number(cijfers);
+              return (10 ** ((waarde - 109) / 32)).toFixed(7);
+            })
+          )
+          .join("\n");
+      } catch (fout) {
+        uitvoer.textContent =
+          "De Buienradar-gegevens konden niet worden opgehaald.\n" +
+          fout.message;
+      }
+    }
+
+    laadGegevens();
+  </script>
+</body>
+</html>
